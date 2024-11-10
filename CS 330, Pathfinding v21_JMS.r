@@ -39,7 +39,7 @@ num.width  <- function(x, left, right) { format(round(x, right),  nsmall=right, 
 # Initialize file path and trace file; report program begin to trace file.
 
 computer   <- 2  # 1=Alfa, 2=Bravo
-file.path  <- c("C:/Users/mpetty/Desktop/Working, CS 330/", "Z:/UAH/CS330 Fall 2022/JMS Fall 2022/Programming Assignment 3 - JMS/")[computer]
+file.path  <- c("C:/Users/mpetty/Desktop/Working, CS 330/", "C:\Users\sutto\OneDrive\Documents\Garett\School\UAH\CS 330\Garett_Sutton_PA3\CS_330_UAH_PA3")[computer]
 trace.file <- paste(file.path, "CS 330, Pathfinding, Trace ", scenario.name, " ", Sys.Date(), ".txt", sep="")
 
 write.text(trace.file, paste("CS 330, Pathfinding, Begin", Sys.time(), "\n"), TRUE)
