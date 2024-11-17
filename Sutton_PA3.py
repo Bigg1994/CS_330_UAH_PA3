@@ -2,12 +2,13 @@
 # Pathfinding Algorithm Implementation
 # Author: Garett Sutton
 # Team Members: Garett Sutton
+# Reference Credit: Parker Clark
 # Due Date: 11/17/2024
 # Program Name: Sutton_PA3.py
 # Python Version: 3.12
 #########################################################
 
-# Required Libraries
+# Dependencies
 import math
 
 # File Paths for Input and Output
@@ -18,46 +19,36 @@ CONNECTIONS_FILE = "CS 330, Pathfinding, Graph AB Connections v3.txt"
 class Graph:
 
     def __init__(self, nodeFilePath, connectionFilePath):
-        # Open the node file and load all lines into a list
+        # Open the node file and read all lines into a list
         with open(nodeFilePath, 'r') as file:
             nodeData = file.readlines()
 
-        # Create a list for storing nodes, starting with a placeholder node at index 0
-        self.currentNodes = [Node()]
+        # Create a list of nodes, starting with a dummy node at index 0
+        self.nodes = [Node()]
 
-        # Process each line of the node data
+        # Iterate through the node data and create Node instances
         for line in nodeData:
-            # Skip lines that are comments
-            if line[0] == '#':
+            if line[0] == '#':  # Skip comment lines
                 continue
-
-            # Split the line by commas and process the values
             rowData = line.split(',')
+            for i in range(1, 9):  # Populate nodes with data from the file
+                self.nodes.append(Node("N", float(rowData[i])))
 
-            # Add a new node to the list with the data from the current line
-            for i in range(1, 9):
-                self.currentNodes.append(Node("N", float(rowData[i])))
-
-        # Load the connection file into a list of lines
+        # Load the connection file
         with open(connectionFilePath, 'r') as file:
             connectionData = file.readlines()
 
-        # Initialize a list for storing connections, with a placeholder connection at index 0
-        self.currentConnections = [Connection()]
+        # Initialize the connection list, starting with a placeholder connection
+        self.connections = [Connection()]
 
         # Process each connection line
         for line in connectionData:
-            # Skip comment lines
-            if line[0] == '#':
+            if line[0] == '#':  # Skip comment lines
                 continue
-
-            # Split the line and extract data for the connection
             rowData = line.split(',')
-
-            # Add a new connection object to the list
-            self.currentConnections.append(Connection("C", int(rowData[1]), int(rowData[2]), 
-                                                      int(rowData[3]), float(rowData[4]), 
-                                                      int(rowData[6])))
+            self.connections.append(Connection("C", int(rowData[1]), int(rowData[2]),
+                                               int(rowData[3]), float(rowData[4]),
+                                               int(rowData[6])))
 
 class Node:
 
@@ -69,12 +60,12 @@ class Node:
         self.currentCost = currentCost
         self.heuristic = heuristic
         self.total = total
-        self.pre = pre
+        self.predecessor = pre
         self.X = X
         self.Y = Y
 
     def heuristicDistance(self, otherNode):
-        # Calculate the Euclidean distance from this node to another node
+        # Calculate the Euclidean distance between this node and another
         return math.sqrt((self.X - otherNode.X)**2 + (self.Y - otherNode.Y)**2)
 
 class Connection:
@@ -92,96 +83,93 @@ class Connection:
 class AStarAlgorithm:
 
     def __init__(self, graph: Graph):
-        # Constructor for A* algorithm
+        # Initialize A* algorithm with a graph
         self.graph = graph
         self.finalCost = None
 
-    def getConnections(self, currentNodeIndex):
-        # Retrieve all connections from a given node
+    def getConnections(self, nodeIndex):
+        # Retrieve all connections from a specific node
         connections = []
-        for connection in self.graph.currentConnections:
-            if connection.fromNode == currentNodeIndex:
+        for connection in self.graph.connections:
+            if connection.fromNode == nodeIndex:
                 connections.append(connection)
         return connections
 
     def findLowest(self, openList):
-        # Identify the node with the lowest total cost from the open list
+        # Find the node with the lowest total cost from the open list
         lowestCost = float('inf')
         lowestNode = None
         for nodeIndex in openList:
-            node = self.graph.currentNodes[nodeIndex]
+            node = self.graph.nodes[nodeIndex]
             if node.total < lowestCost:
                 lowestCost = node.total
                 lowestNode = nodeIndex
         return lowestNode
 
-    def retrievePath(self, startNodeIndex, endNodeIndex):
-        # Reconstruct the path by following the parent pointers
+    def retrievePath(self, startIndex, goalIndex):
+        # Reconstruct the path from the start node to the goal node
         path = []
-        currentNodeIndex = endNodeIndex
+        currentIndex = goalIndex
 
-        # Backtrack from the goal node to the start node
-        while currentNodeIndex != startNodeIndex and currentNodeIndex is not None:
-            path.append(currentNodeIndex)
-            currentNodeIndex = self.graph.currentNodes[currentNodeIndex].pre
+        # Backtrack to the start node using the predecessor pointer
+        while currentIndex != startIndex and currentIndex is not None:
+            path.append(currentIndex)
+            currentIndex = self.graph.nodes[currentIndex].predecessor
 
-        # If the start node was found, add it to the path
-        if currentNodeIndex == startNodeIndex:
-            path.append(startNodeIndex)
+        if currentIndex == startIndex:
+            path.append(startIndex)
 
-        # Return the path in the correct order (start -> end)
+        # Return the path from start to goal (reverse the list to correct the order)
         return path[::-1]
 
-    def findPath(self, startNodeIndex, goalNodeIndex):
-        # Reset all nodes in the graph for a new search
-        for node in self.graph.currentNodes[1:]:  # Skip dummy node at index 0
+    def findPath(self, startIndex, goalIndex):
+        # Reset the graph nodes for a new search
+        for node in self.graph.nodes[1:]:  # Skip the dummy node at index 0
             node.status = 'unvisited'
             node.currentCost = float('inf')
-            node.pre = None
+            node.predecessor = None
 
-        # Initialize the start node
-        startNode = self.graph.currentNodes[startNodeIndex]
+        # Initialize the starting node
+        startNode = self.graph.nodes[startIndex]
         startNode.status = 'open'
         startNode.currentCost = 0
 
-        # List of open nodes, initially just the start node
-        openNodes = [startNodeIndex]
+        openNodes = [startIndex]
 
         while openNodes:
             # Select the node with the lowest total cost
-            currentNodeIndex = self.findLowest(openNodes)
-            currentNode = self.graph.currentNodes[currentNodeIndex]
+            currentIndex = self.findLowest(openNodes)
+            currentNode = self.graph.nodes[currentIndex]
 
-            # If we've reached the goal, break the loop
-            if currentNodeIndex == goalNodeIndex:
+            # If the goal is reached, stop the loop
+            if currentIndex == goalIndex:
                 break
 
-            # Process all the neighbors of the current node
-            for connection in self.getConnections(currentNodeIndex):
+            # Process each connection from the current node
+            for connection in self.getConnections(currentIndex):
                 nextNodeIndex = connection.toNode
                 newCost = currentNode.currentCost + connection.cost
 
-                # If a cheaper path to the next node is found, update it
-                if newCost < self.graph.currentNodes[nextNodeIndex].currentCost:
-                    nextNode = self.graph.currentNodes[nextNodeIndex]
+                # If a better path is found, update the node
+                if newCost < self.graph.nodes[nextNodeIndex].currentCost:
+                    nextNode = self.graph.nodes[nextNodeIndex]
                     nextNode.status = 'open'
-                    nextNode.pre = currentNodeIndex
+                    nextNode.predecessor = currentIndex
                     nextNode.currentCost = newCost
-                    nextNode.heuristic = self.graph.currentNodes[nextNodeIndex].heuristicDistance(self.graph.currentNodes[goalNodeIndex])
+                    nextNode.heuristic = self.graph.nodes[nextNodeIndex].heuristicDistance(self.graph.nodes[goalIndex])
                     nextNode.total = nextNode.currentCost + nextNode.heuristic
 
-                    # If the next node is not in the open list, add it
                     if nextNodeIndex not in openNodes:
                         openNodes.append(nextNodeIndex)
 
             # Mark the current node as visited and remove it from the open list
             currentNode.status = 'visited'
-            openNodes.remove(currentNodeIndex)
+            openNodes.remove(currentIndex)
 
-        # Store the total cost to the goal
-        self.finalCost = self.graph.currentNodes[goalNodeIndex].currentCost
+        # Store the total cost of the path to the goal
+        self.finalCost = self.graph.nodes[goalIndex].currentCost
 
-# Open the output file to log the results
+# Open the output file and log results
 with open(OUTPUT_FILE, "w") as outFile:
     outFile.write("Pathfinding Output by Garett Sutton\nCS330 Fall 2024\n\n")
 
@@ -214,10 +202,9 @@ with open(OUTPUT_FILE, "w") as outFile:
 
     # Process each test case
     for start, end in testCases:
-        # Find the path and total cost
         aStarAlgorithm.findPath(start, end)
         path = aStarAlgorithm.retrievePath(start, end)
 
-        # Log the path and cost to the output file
+        # Log the path and total cost to the output file
         outFile.write(f"Path from {start} to {end}: {path}\n")
         outFile.write(f"Total Cost: {aStarAlgorithm.finalCost}\n\n")
